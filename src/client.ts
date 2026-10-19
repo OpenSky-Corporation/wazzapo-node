@@ -139,7 +139,7 @@ export class Wazzapo implements Transport {
     this.maxRetries = options.maxRetries ?? 2;
     const f = options.fetch ?? globalThis.fetch;
     if (typeof f !== "function") {
-      throw new WazzapoError({ status: 0, code: "NO_FETCH", message: "Нет fetch: нужен Node.js 18+ или передайте fetch" });
+      throw new WazzapoError({ status: 0, code: "NO_FETCH", message: "Нет fetch: нужен Node.js 20+ или передайте fetch" });
     }
     this.#fetch = f.bind(globalThis);
     this.#debug = options.debug ?? null;

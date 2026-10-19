@@ -16,4 +16,4 @@
 - `signal` отменяет и запрос, и паузу между повторами; `timeout` действует до конца чтения ответа.
 - Фильтры-перечисления (`status`, `category` у шаблонов) типизированы литералами, `details` у
   `UsageLimitError` с типом; повтор `next_cursor` останавливает обход с кодом `PAGINATION_LOOP`.
-- ESM и CommonJS, Node.js 18+, без зависимостей.
+- ESM и CommonJS, Node.js 20+, без зависимостей.
