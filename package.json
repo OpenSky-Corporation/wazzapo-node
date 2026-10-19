@@ -1,6 +1,6 @@
 {
   "name": "@wazzapo/sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Официальная библиотека API v2 Wazzapo: WhatsApp, переписки, контакты, сделки, вебхуки",
   "license": "MIT",
   "author": "TOO «OPENSKY CORPORATION» <info@wazzapo.kz>",

@@ -23,9 +23,9 @@ import { Wazzapo } from "@wazzapo/sdk";
 
 const client = new Wazzapo(); // ключ из WAZZAPO_API_KEY, или new Wazzapo({ apiKey: "wz_live_…" })
 
-const { data: numbers } = await client.phoneNumbers.list();
-// В списке все каналы аккаунта (WhatsApp, Telegram, OLX…): берём подключённый номер WhatsApp
-const whatsapp = numbers.find((n) => n.provider_type === "meta_cloud" && n.status === "connected");
+// Только номера WhatsApp (без фильтра в списке все каналы: Telegram, OLX, почта…)
+const { data: numbers } = await client.phoneNumbers.list({ channel: "whatsapp" });
+const whatsapp = numbers.find((n) => n.status === "connected");
 if (!whatsapp) throw new Error("Нет подключённого номера WhatsApp");
 const phoneNumberId = whatsapp.phone_number_id;
 

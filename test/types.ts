@@ -71,8 +71,8 @@ void usage;
 
 // Первое сообщение из README: компилируется и с noUncheckedIndexedAccess
 async function firstMessage(client: Wazzapo): Promise<void> {
-  const { data: numbers } = await client.phoneNumbers.list();
-  const whatsapp = numbers.find((n) => n.provider_type === "meta_cloud" && n.status === "connected");
+  const { data: numbers } = await client.phoneNumbers.list({ channel: "whatsapp" });
+  const whatsapp = numbers.find((n) => n.status === "connected");
   if (!whatsapp) throw new Error("Нет подключённого номера WhatsApp");
   const phoneNumberId = whatsapp.phone_number_id;
   await client.messages.send({ phone_number_id: phoneNumberId, to: "77071234567", type: "text", text: { body: "Привет" } });
