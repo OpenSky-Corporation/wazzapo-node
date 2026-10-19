@@ -1,0 +1,37 @@
+{
+  "name": "@wazzapo/sdk",
+  "version": "0.1.0",
+  "description": "Официальная библиотека API v2 Wazzapo: WhatsApp, переписки, контакты, сделки, вебхуки",
+  "license": "MIT",
+  "author": "TOO «OPENSKY CORPORATION» <info@wazzapo.kz>",
+  "homepage": "https://wazzapo.kz/docs",
+  "keywords": ["wazzapo", "whatsapp", "whatsapp-business", "cloud-api", "crm", "sdk"],
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/esm/index.d.ts", "default": "./dist/esm/index.js" },
+      "require": { "types": "./dist/cjs/index.d.ts", "default": "./dist/cjs/index.js" }
+    },
+    "./webhooks": {
+      "import": { "types": "./dist/esm/webhooks.d.ts", "default": "./dist/esm/webhooks.js" },
+      "require": { "types": "./dist/cjs/webhooks.d.ts", "default": "./dist/cjs/webhooks.js" }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "scripts": {
+    "build": "node scripts/clean.mjs && tsc -p tsconfig.esm.json && tsc -p tsconfig.cjs.json && node scripts/cjs-package.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run typecheck && npm run build && node --test test/client.test.mjs test/webhooks.test.mjs test/cjs.test.cjs test/live.test.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.0"
+  }
+}
