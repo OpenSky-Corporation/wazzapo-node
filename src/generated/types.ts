@@ -1173,6 +1173,10 @@ export interface PhoneNumberListOut {
  */
 export interface PhoneNumberOut {
   /**
+   * Канал: whatsapp, telegram, instagram, olx, satu (чат Satu.kz), email (почтовый ящик), webchat (чат на сайте). Отправить сообщение через POST /messages/send и шаблоны можно только у whatsapp
+   */
+  channel: string;
+  /**
    * Подтверждён ли номер кодом из SMS или звонка
    */
   code_verification_status?: "VERIFIED" | "NOT_VERIFIED" | "EXPIRED" | null;
@@ -1185,7 +1189,7 @@ export interface PhoneNumberOut {
    */
   phone_number_id: string;
   /**
-   * Как подключён номер: meta_cloud (WhatsApp Cloud API) или evolution_api (старое подключение)
+   * Как подключён канал: whatsapp_business (WhatsApp Cloud API), evolution_api (старое подключение WhatsApp), telegram, instagram, olx, satu, email, webchat
    */
   provider_type: string;
   /**
@@ -1353,6 +1357,10 @@ export interface RegisterPhoneNumberIn {
 
 export interface RegisterPhoneNumberOut {
   /**
+   * Канал: whatsapp, telegram, instagram, olx, satu (чат Satu.kz), email (почтовый ящик), webchat (чат на сайте). Отправить сообщение через POST /messages/send и шаблоны можно только у whatsapp
+   */
+  channel: string;
+  /**
    * Подтверждён ли номер кодом из SMS или звонка
    */
   code_verification_status?: "VERIFIED" | "NOT_VERIFIED" | "EXPIRED" | null;
@@ -1369,7 +1377,7 @@ export interface RegisterPhoneNumberOut {
    */
   phone_number_id: string;
   /**
-   * Как подключён номер: meta_cloud (WhatsApp Cloud API) или evolution_api (старое подключение)
+   * Как подключён канал: whatsapp_business (WhatsApp Cloud API), evolution_api (старое подключение WhatsApp), telegram, instagram, olx, satu, email, webchat
    */
   provider_type: string;
   /**

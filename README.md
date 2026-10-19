@@ -1,6 +1,7 @@
 # @wazzapo/sdk
 
-Официальная библиотека [API v2 Wazzapo](https://wazzapo.kz/api/v2/external/docs) для Node.js, Bun и браузера:
+Официальная библиотека [API v2 Wazzapo](https://wazzapo.kz/api/v2/external/docs) для Node.js и Bun
+(клиент API работает и в браузере, проверка вебхуков только на сервере, через `node:crypto`):
 WhatsApp-сообщения и шаблоны, переписки, контакты, сделки, вебхуки. Без зависимостей, типы и подсказки
 по-русски, повторы и ошибки уже учтены.
 
@@ -23,7 +24,10 @@ import { Wazzapo } from "@wazzapo/sdk";
 const client = new Wazzapo(); // ключ из WAZZAPO_API_KEY, или new Wazzapo({ apiKey: "wz_live_…" })
 
 const { data: numbers } = await client.phoneNumbers.list();
-const phoneNumberId = numbers[0].phone_number_id;
+// В списке все каналы аккаунта (WhatsApp, Telegram, OLX…): берём подключённый номер WhatsApp
+const whatsapp = numbers.find((n) => n.provider_type === "meta_cloud" && n.status === "connected");
+if (!whatsapp) throw new Error("Нет подключённого номера WhatsApp");
+const phoneNumberId = whatsapp.phone_number_id;
 
 // Текст: только если клиент писал вам за последние 24 часа
 await client.messages.send({
@@ -57,8 +61,13 @@ await client.messages.send({
 CommonJS тоже работает: `const { Wazzapo } = require("@wazzapo/sdk")`.
 
 Все методы повторяют адреса API: `GET /deals` это `client.deals.list()`, `POST /deals/{deal_id}/move` это
-`client.deals.move(dealId, body)`. Параметры пути идут первыми, затем тело, затем параметры запроса,
-последними настройки вызова.
+`client.deals.move(dealId, body)`. Параметры пути идут первыми, затем тело. Последний аргумент это один
+объект: фильтры запроса и настройки вызова вместе, поэтому новый фильтр в API не ломает ваш код.
+
+```ts
+await client.templates.list({ phone_number_id: phoneNumberId, status: "APPROVED", timeout: 10_000 });
+await client.contacts.create({ phone: "77071234567" }, { idempotencyKey: "lead-1024" });
+```
 
 ## Ошибки
 
@@ -76,7 +85,7 @@ try {
   } else if (error instanceof TemplateError) {
     // шаблон не найден, не одобрен, приостановлен или отключён (error.code)
   } else if (error instanceof UsageLimitError) {
-    console.log(error.details); // { current, limit, upgrade_url }
+    console.log(error.details?.current, error.details?.limit, error.details?.upgrade_url); // типы есть
   } else if (error instanceof ValidationError) {
     console.log(error.fields); // [{ field: "body.to", message: "Field required" }]
   } else if (error instanceof WazzapoError) {
@@ -95,7 +104,11 @@ try {
 | `ValidationError`, `OutsideWindowError`, `TemplateError`, `UnprocessableEntityError` | 422 |
 | `RateLimitError` | 429, в `retryAfter` секунды до повтора |
 | `ServerError` | 5xx |
-| `ConnectionError`, `TimeoutError` | ответа нет |
+| `BadRequestError` | 400: неверный запрос |
+| `ConnectionError`, `TimeoutError` | ответа нет: `code` равен `CONNECTION_ERROR` или `TIMEOUT` |
+
+Ответ не в формате API (например, страница прокси с 502) получает код по статусу: `BAD_GATEWAY` и т.д.
+Если сервер дважды вернёт тот же `next_cursor`, обход списка остановится с кодом `PAGINATION_LOOP`.
 
 Все коды ошибок: `ERROR_CODES` и таблица в [описании API](https://wazzapo.kz/api/v2/external/docs).
 
@@ -112,8 +125,9 @@ await client.deals.create({ pipeline_id: "p1", contact: { phone: "77071234567" }
 ```
 
 Настройки клиента: `new Wazzapo({ apiKey, baseUrl, timeout: 30_000, maxRetries: 2, debug: console.debug })`.
-Настройки одного вызова: `{ idempotencyKey, timeout, maxRetries, signal, headers }`. Ключ в строках отладки
-скрыт: `wz_live_…`.
+Настройки одного вызова: `{ idempotencyKey, timeout, maxRetries, signal, headers }`. `timeout` действует до
+конца чтения ответа, `signal` отменяет запрос и паузу между повторами (уже отменённый сигнал: запрос не
+уходит, ошибка `AbortError`). Ключ в строках отладки, `console.log(client)` и JSON скрыт: `wz_live_…`.
 
 ## Списки
 
@@ -157,6 +171,9 @@ console.log(webhook.secret);
 
 Проверяйте подпись по **сырому** телу запроса, до разбора JSON. `Webhooks.verify` сверяет подпись
 `X-Wazzapo-Signature-V2` и время `X-Wazzapo-Timestamp` (допуск 5 минут) и возвращает событие с типами.
+Любой отказ (чужая подпись, старая метка, тело не JSON, пустой секрет) это `WebhookVerificationError`:
+отвечайте 400. Без секрета `verify` не работает совсем: подпись пустым ключом подделал бы кто угодно.
+Если в заголовке несколько подписей через запятую (смена секрета), хватает совпадения одной.
 
 Express:
 
@@ -201,7 +218,8 @@ createServer(async (req, res) => {
 ```
 
 Отвечайте 2xx быстро, тяжёлую работу делайте после ответа. Повторы одной доставки приходят с тем же
-заголовком `X-Wazzapo-Delivery-Id`: по нему отсеивайте дубли. Проверить приёмник: `client.webhooks.test(webhookId)`,
+заголовком `X-Wazzapo-Delivery-Id` (константа `DELIVERY_ID_HEADER` из `@wazzapo/sdk/webhooks`): по нему
+отсеивайте дубли. Проверить приёмник: `client.webhooks.test(webhookId)`,
 для своих тестов подпись можно создать: `Webhooks.sign(body, secret)`.
 
 ## Тестовый ключ

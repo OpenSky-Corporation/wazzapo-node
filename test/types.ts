@@ -53,3 +53,28 @@ async function readme(client: Wazzapo, phoneNumberId: string, conversationId: st
   if (event.event === "message.incoming") void [event.data.contact.phone, event.data.message.text];
 }
 void readme;
+
+// Фильтры-перечисления литералами: опечатка "APPROVD" не компилируется
+import type { TemplatesListQuery, UsageLimitError } from "../src/index.js";
+type TemplateStatus = NonNullable<TemplatesListQuery["status"]>;
+const statusIsLiteral: string extends TemplateStatus ? false : true = true;
+const approved: TemplateStatus = "APPROVED";
+void [statusIsLiteral, approved];
+
+// details лимита читаются без приведения типов
+function usage(error: UsageLimitError): string {
+  const limit: number | null | undefined = error.details?.limit;
+  const url: string | null | undefined = error.details?.upgrade_url;
+  return `${limit ?? "?"} ${url ?? ""}`;
+}
+void usage;
+
+// Первое сообщение из README: компилируется и с noUncheckedIndexedAccess
+async function firstMessage(client: Wazzapo): Promise<void> {
+  const { data: numbers } = await client.phoneNumbers.list();
+  const whatsapp = numbers.find((n) => n.provider_type === "meta_cloud" && n.status === "connected");
+  if (!whatsapp) throw new Error("Нет подключённого номера WhatsApp");
+  const phoneNumberId = whatsapp.phone_number_id;
+  await client.messages.send({ phone_number_id: phoneNumberId, to: "77071234567", type: "text", text: { body: "Привет" } });
+}
+void firstMessage;

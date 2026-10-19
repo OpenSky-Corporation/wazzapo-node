@@ -40,6 +40,13 @@ test("запрос: адрес, ключ, User-Agent, тело и парамет
   assert.match(call.headers["Idempotency-Key"], /^[0-9a-f-]{36}$/);
 });
 
+test("фильтры и настройки вызова в одном объекте: настройки не уходят в адрес", async () => {
+  const { fetch, calls } = mockFetch([json(200, { data: [] })]);
+  await client(fetch).phoneNumbers.list({ channel: "whatsapp", timeout: 5000, headers: { "X-Request-Id": "r1" } });
+  assert.equal(calls[0].url, "https://wazzapo.kz/api/v2/external/phone-numbers?channel=whatsapp");
+  assert.equal(calls[0].headers["X-Request-Id"], "r1");
+});
+
 test("параметры запроса: пустые пропускаются, путь кодируется", async () => {
   const { fetch, calls } = mockFetch([json(200, { data: [], has_more: false, next_cursor: null })]);
   await client(fetch).conversations.listMessages("a/b", { include_notes: true, since: null, limit: 10 });
@@ -238,4 +245,76 @@ test("свой адрес API без слеша на конце", async () => {
   const { fetch, calls } = mockFetch([json(200, { data: [] })]);
   await client(fetch, { baseUrl: "http://localhost:8000/" }).phoneNumbers.list();
   assert.equal(calls[0].url, "http://localhost:8000/api/v2/external/phone-numbers");
+});
+
+test("уже отменённый signal: запрос не уходит", async () => {
+  const { fetch, calls } = mockFetch([json(200, { data: [] })]);
+  const ac = new AbortController();
+  ac.abort();
+  await assert.rejects(client(fetch).phoneNumbers.list({ signal: ac.signal }), { name: "AbortError" });
+  assert.equal(calls.length, 0);
+});
+
+test("отмена во время паузы между повторами прерывает её", async () => {
+  const { fetch, calls } = mockFetch([json(503, {}), json(200, { data: [] })]);
+  const ac = new AbortController();
+  // пауза «бесконечная»: без учёта сигнала тест бы завис
+  const sleep = () => new Promise(() => {});
+  const pending = new Wazzapo({ apiKey: KEY, fetch, sleep }).phoneNumbers.list({ signal: ac.signal });
+  setTimeout(() => ac.abort(), 20);
+  await assert.rejects(pending, { name: "AbortError" });
+  assert.equal(calls.length, 1);
+});
+
+test("таймаут покрывает чтение тела ответа", async () => {
+  const fetch = async (_url, init) => {
+    // заголовки сразу, тело не приходит, пока запрос не отменён
+    const body = new ReadableStream({
+      start(controller) {
+        init.signal.addEventListener("abort", () => controller.error(new DOMException("aborted", "AbortError")));
+      },
+    });
+    return new Response(body, { status: 200, headers: { "content-type": "application/json" } });
+  };
+  await assert.rejects(client(fetch, { timeout: 30, maxRetries: 0 }).phoneNumbers.list(), TimeoutError);
+});
+
+test("пагинация: тот же next_cursor останавливает обход ошибкой", async () => {
+  const page = { data: [{ id: "c1" }], next_cursor: "same", has_more: true };
+  const { fetch } = mockFetch([json(200, page), json(200, page), json(200, page)]);
+  const seen = [];
+  await assert.rejects(
+    (async () => {
+      for await (const item of client(fetch).contacts.listAll()) seen.push(item.id);
+    })(),
+    (error) => error instanceof WazzapoError && error.code === "PAGINATION_LOOP",
+  );
+  assert.deepEqual(seen, ["c1", "c1"]);
+});
+
+test("400 → BadRequestError, 422 без особого кода → UnprocessableEntityError, поля проверки", async () => {
+  const { BadRequestError, UnprocessableEntityError } = await import("../dist/esm/index.js");
+  const { fetch } = mockFetch([
+    json(400, { success: false, error: { code: "BAD_REQUEST", message: "Неверный запрос" } }),
+    json(422, { success: false, error: { code: "invalid_parameters", message: "Meta не приняла" } }),
+    json(422, { success: false, error: { code: "VALIDATION_ERROR", message: "x", details: [{ field: "body.to", message: "Field required" }] } }),
+  ]);
+  const c = client(fetch);
+  await assert.rejects(c.phoneNumbers.list(), BadRequestError);
+  await assert.rejects(c.phoneNumbers.list(), (e) => e instanceof UnprocessableEntityError && !(e instanceof ValidationError));
+  await assert.rejects(c.phoneNumbers.list(), (e) => e instanceof ValidationError && e instanceof UnprocessableEntityError && e.fields[0].field === "body.to");
+});
+
+test("нет ключа: понятная ошибка до запроса; ключ не виден в ошибках", async () => {
+  const saved = process.env.WAZZAPO_API_KEY;
+  delete process.env.WAZZAPO_API_KEY;
+  try {
+    assert.throws(() => new Wazzapo({}), (e) => e instanceof WazzapoError && /Нет API-ключа/.test(e.message));
+  } finally {
+    if (saved !== undefined) process.env.WAZZAPO_API_KEY = saved;
+  }
+  const { fetch } = mockFetch([json(401, { success: false, error: { code: "INVALID_API_KEY", message: "Invalid API key" } })]);
+  const error = await client(fetch).phoneNumbers.list().catch((e) => e);
+  assert.ok(!inspect(error, { depth: 5 }).includes(KEY));
+  assert.ok(!JSON.stringify(Object.keys(new Wazzapo({ apiKey: KEY, fetch }))).includes(KEY));
 });

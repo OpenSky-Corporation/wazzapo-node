@@ -1,6 +1,6 @@
 // Сгенерировано из sdk/openapi.json командой `cd sdk && python -m codegen typescript`. Не править руками.
 
-import type { RequestOptions, Transport } from "../core.js";
+import { splitOptions, type RequestOptions, type Transport } from "../core.js";
 import { paginate } from "../pagination.js";
 import type {
   AddNoteIn,
@@ -193,6 +193,14 @@ export interface MediaUploadQuery {
   phone_number_id: string;
 }
 
+/** Параметры запроса phone_numbers.list. */
+export interface PhoneNumbersListQuery {
+  /**
+   * Только этот канал: whatsapp, telegram, instagram, olx, satu, email, webchat. Для отправки сообщений и шаблонов нужен whatsapp
+   */
+  channel?: "whatsapp" | "telegram" | "instagram" | "olx" | "satu" | "email" | "webchat" | null;
+}
+
 /** Параметры запроса pipelines.list. */
 export interface PipelinesListQuery {
   /**
@@ -246,11 +254,11 @@ export interface TemplatesListQuery {
   /**
    * Только с этим статусом: PENDING, APPROVED, REJECTED, PAUSED, DISABLED
    */
-  status?: string | null;
+  status?: "PENDING" | "APPROVED" | "REJECTED" | "DISABLED" | "PAUSED" | null;
   /**
    * Только этой категории: MARKETING, UTILITY, AUTHENTICATION
    */
-  category?: string | null;
+  category?: "MARKETING" | "UTILITY" | "AUTHENTICATION" | null;
   /**
    * Часть имени без учёта регистра, например zapis
    */
@@ -315,7 +323,8 @@ export class ContactsResource {
    *
    * `POST /api/v2/external/contacts`
    */
-  create(body: ContactCreateIn, options: RequestOptions = {}): Promise<ContactV2Out> {
+  create(body: ContactCreateIn, params: RequestOptions = {}): Promise<ContactV2Out> {
+    const options = params;
     return this.transport.request<ContactV2Out>({ method: "POST", path: `/contacts`, body, options });
   }
 
@@ -331,7 +340,8 @@ export class ContactsResource {
    *
    * @param contactId id контакта: поле id из GET /contacts или из ответа POST /contacts, например 6712f0c4a1b2c3d4e5f60718
    */
-  delete(contactId: string, options: RequestOptions = {}): Promise<null> {
+  delete(contactId: string, params: RequestOptions = {}): Promise<null> {
+    const options = params;
     return this.transport.request<null>({ method: "DELETE", path: `/contacts/${encodeURIComponent(contactId)}`, options });
   }
 
@@ -347,7 +357,8 @@ export class ContactsResource {
    *
    * @param contactId id контакта: поле id из GET /contacts или из ответа POST /contacts, например 6712f0c4a1b2c3d4e5f60718
    */
-  get(contactId: string, options: RequestOptions = {}): Promise<ContactV2Out> {
+  get(contactId: string, params: RequestOptions = {}): Promise<ContactV2Out> {
+    const options = params;
     return this.transport.request<ContactV2Out>({ method: "GET", path: `/contacts/${encodeURIComponent(contactId)}`, options });
   }
 
@@ -362,7 +373,8 @@ export class ContactsResource {
    *
    * `GET /api/v2/external/contacts`
    */
-  list(query: ContactsListQuery = {}, options: RequestOptions = {}): Promise<ContactListOut> {
+  list(params: ContactsListQuery & RequestOptions = {}): Promise<ContactListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<ContactListOut>({ method: "GET", path: `/contacts`, query, options });
   }
 
@@ -371,9 +383,9 @@ export class ContactsResource {
    *
    * `for await (const item of client.contacts.listAll(...))`
    */
-  listAll(query: Omit<ContactsListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<ContactV2Out> {
+  listAll(params: Omit<ContactsListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<ContactV2Out> {
     return paginate<ContactV2Out>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 
@@ -391,7 +403,8 @@ export class ContactsResource {
    *
    * @param contactId id контакта: поле id из GET /contacts или из ответа POST /contacts, например 6712f0c4a1b2c3d4e5f60718
    */
-  update(contactId: string, body: ContactUpdateIn, options: RequestOptions = {}): Promise<ContactV2Out> {
+  update(contactId: string, body: ContactUpdateIn, params: RequestOptions = {}): Promise<ContactV2Out> {
+    const options = params;
     return this.transport.request<ContactV2Out>({ method: "PATCH", path: `/contacts/${encodeURIComponent(contactId)}`, body, options });
   }
 }
@@ -413,7 +426,8 @@ export class ConversationsResource {
    *
    * @param conversationId id диалога: поле id из GET /api/v2/external/conversations или conversation_id из вебхука message.incoming, например 6a7d5d3712f8e1a5c19f40c4
    */
-  addNote(conversationId: string, body: AddNoteIn, options: RequestOptions = {}): Promise<ConversationMessageOut> {
+  addNote(conversationId: string, body: AddNoteIn, params: RequestOptions = {}): Promise<ConversationMessageOut> {
+    const options = params;
     return this.transport.request<ConversationMessageOut>({ method: "POST", path: `/conversations/${encodeURIComponent(conversationId)}/notes`, body, options });
   }
 
@@ -430,7 +444,8 @@ export class ConversationsResource {
    *
    * @param conversationId id диалога: поле id из GET /api/v2/external/conversations или conversation_id из вебхука message.incoming, например 6a7d5d3712f8e1a5c19f40c4
    */
-  assign(conversationId: string, body: AssignConversationIn, options: RequestOptions = {}): Promise<ConversationItemOut> {
+  assign(conversationId: string, body: AssignConversationIn, params: RequestOptions = {}): Promise<ConversationItemOut> {
+    const options = params;
     return this.transport.request<ConversationItemOut>({ method: "POST", path: `/conversations/${encodeURIComponent(conversationId)}/assign`, body, options });
   }
 
@@ -445,7 +460,8 @@ export class ConversationsResource {
    *
    * @param conversationId id диалога: поле id из GET /api/v2/external/conversations или conversation_id из вебхука message.incoming, например 6a7d5d3712f8e1a5c19f40c4
    */
-  get(conversationId: string, options: RequestOptions = {}): Promise<ConversationItemOut> {
+  get(conversationId: string, params: RequestOptions = {}): Promise<ConversationItemOut> {
+    const options = params;
     return this.transport.request<ConversationItemOut>({ method: "GET", path: `/conversations/${encodeURIComponent(conversationId)}`, options });
   }
 
@@ -462,7 +478,8 @@ export class ConversationsResource {
    *
    * `GET /api/v2/external/conversations`
    */
-  list(query: ConversationsListQuery = {}, options: RequestOptions = {}): Promise<ConversationListOut> {
+  list(params: ConversationsListQuery & RequestOptions = {}): Promise<ConversationListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<ConversationListOut>({ method: "GET", path: `/conversations`, query, options });
   }
 
@@ -471,9 +488,9 @@ export class ConversationsResource {
    *
    * `for await (const item of client.conversations.listAll(...))`
    */
-  listAll(query: Omit<ConversationsListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<ConversationItemOut> {
+  listAll(params: Omit<ConversationsListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<ConversationItemOut> {
     return paginate<ConversationItemOut>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 
@@ -490,7 +507,8 @@ export class ConversationsResource {
    *
    * @param conversationId id диалога: поле id из GET /api/v2/external/conversations или conversation_id из вебхука message.incoming, например 6a7d5d3712f8e1a5c19f40c4
    */
-  listMessages(conversationId: string, query: ConversationsListMessagesQuery = {}, options: RequestOptions = {}): Promise<ConversationMessageListOut> {
+  listMessages(conversationId: string, params: ConversationsListMessagesQuery & RequestOptions = {}): Promise<ConversationMessageListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<ConversationMessageListOut>({ method: "GET", path: `/conversations/${encodeURIComponent(conversationId)}/messages`, query, options });
   }
 
@@ -499,9 +517,9 @@ export class ConversationsResource {
    *
    * `for await (const item of client.conversations.listMessagesAll(...))`
    */
-  listMessagesAll(conversationId: string, query: Omit<ConversationsListMessagesQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<ConversationMessageOut> {
+  listMessagesAll(conversationId: string, params: Omit<ConversationsListMessagesQuery, "cursor"> & RequestOptions = {}): AsyncIterable<ConversationMessageOut> {
     return paginate<ConversationMessageOut>((cursor) =>
-      this.listMessages(conversationId, { ...query, cursor }, options),
+      this.listMessages(conversationId, { ...params, cursor }),
     );
   }
 
@@ -516,7 +534,8 @@ export class ConversationsResource {
    *
    * @param conversationId id диалога: поле id из GET /api/v2/external/conversations или conversation_id из вебхука message.incoming, например 6a7d5d3712f8e1a5c19f40c4
    */
-  setLabels(conversationId: string, body: SetLabelsIn, options: RequestOptions = {}): Promise<ConversationItemOut> {
+  setLabels(conversationId: string, body: SetLabelsIn, params: RequestOptions = {}): Promise<ConversationItemOut> {
+    const options = params;
     return this.transport.request<ConversationItemOut>({ method: "POST", path: `/conversations/${encodeURIComponent(conversationId)}/labels`, body, options });
   }
 
@@ -533,7 +552,8 @@ export class ConversationsResource {
    *
    * @param conversationId id диалога: поле id из GET /api/v2/external/conversations или conversation_id из вебхука message.incoming, например 6a7d5d3712f8e1a5c19f40c4
    */
-  setStatus(conversationId: string, body: SetConversationStatusIn, options: RequestOptions = {}): Promise<ConversationItemOut> {
+  setStatus(conversationId: string, body: SetConversationStatusIn, params: RequestOptions = {}): Promise<ConversationItemOut> {
+    const options = params;
     return this.transport.request<ConversationItemOut>({ method: "POST", path: `/conversations/${encodeURIComponent(conversationId)}/status`, body, options });
   }
 }
@@ -567,7 +587,8 @@ export class DealsResource {
    *
    * `POST /api/v2/external/deals`
    */
-  create(body: DealCreateIn, options: RequestOptions = {}): Promise<DealOut> {
+  create(body: DealCreateIn, params: RequestOptions = {}): Promise<DealOut> {
+    const options = params;
     return this.transport.request<DealOut>({ method: "POST", path: `/deals`, body, options });
   }
 
@@ -583,7 +604,8 @@ export class DealsResource {
    *
    * @param dealId id сделки: поле id из GET /deals или из ответа POST /deals, например 6713b1d5f2c3d4e5f6071829
    */
-  get(dealId: string, options: RequestOptions = {}): Promise<DealOut> {
+  get(dealId: string, params: RequestOptions = {}): Promise<DealOut> {
+    const options = params;
     return this.transport.request<DealOut>({ method: "GET", path: `/deals/${encodeURIComponent(dealId)}`, options });
   }
 
@@ -599,7 +621,8 @@ export class DealsResource {
    *
    * `GET /api/v2/external/deals`
    */
-  list(query: DealsListQuery = {}, options: RequestOptions = {}): Promise<DealListOut> {
+  list(params: DealsListQuery & RequestOptions = {}): Promise<DealListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<DealListOut>({ method: "GET", path: `/deals`, query, options });
   }
 
@@ -608,9 +631,9 @@ export class DealsResource {
    *
    * `for await (const item of client.deals.listAll(...))`
    */
-  listAll(query: Omit<DealsListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<DealOut> {
+  listAll(params: Omit<DealsListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<DealOut> {
     return paginate<DealOut>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 
@@ -633,7 +656,8 @@ export class DealsResource {
    *
    * @param dealId id сделки: поле id из GET /deals или из ответа POST /deals, например 6713b1d5f2c3d4e5f6071829
    */
-  move(dealId: string, body: DealMoveIn, options: RequestOptions = {}): Promise<DealOut> {
+  move(dealId: string, body: DealMoveIn, params: RequestOptions = {}): Promise<DealOut> {
+    const options = params;
     return this.transport.request<DealOut>({ method: "POST", path: `/deals/${encodeURIComponent(dealId)}/move`, body, options });
   }
 
@@ -656,7 +680,8 @@ export class DealsResource {
    *
    * @param dealId id сделки: поле id из GET /deals или из ответа POST /deals, например 6713b1d5f2c3d4e5f6071829
    */
-  update(dealId: string, body: DealUpdateIn, options: RequestOptions = {}): Promise<DealOut> {
+  update(dealId: string, body: DealUpdateIn, params: RequestOptions = {}): Promise<DealOut> {
+    const options = params;
     return this.transport.request<DealOut>({ method: "PATCH", path: `/deals/${encodeURIComponent(dealId)}`, body, options });
   }
 }
@@ -671,14 +696,17 @@ export class MediaResource {
    * Скачивает файл по media_id: тело ответа сам файл, тип в заголовке Content-Type.
    *
    * Так забирают фото, голосовые и документы, которые прислал клиент. Сохраните файл у себя:
-   * Meta хранит его ограниченное время. Ошибки: 400 BAD_REQUEST (номер не через Cloud API),
-   * 502 provider_error (файл удалён в Meta или сбой).
+   * Meta хранит его ограниченное время. Ошибки: 404 phone_number_not_found или NOT_FOUND (номер не
+   * найден; файла с таким id нет в Meta: удалён, срок хранения вышел или id неверный; id sandbox_…
+   * от тестового ключа, такие файлы не хранятся), 400 BAD_REQUEST (номер не через Cloud API),
+   * 502 provider_error (сбой Meta, повторите позже).
    *
    * `GET /api/v2/external/media/{media_id}`
    *
    * @param mediaId id файла: media.id из входящего сообщения (вебхук message.incoming) или из POST /media
    */
-  download(mediaId: string, query: MediaDownloadQuery, options: RequestOptions = {}): Promise<ArrayBuffer> {
+  download(mediaId: string, params: MediaDownloadQuery & RequestOptions): Promise<ArrayBuffer> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<ArrayBuffer>({ method: "GET", path: `/media/${encodeURIComponent(mediaId)}`, query, binary: true, options });
   }
 
@@ -695,7 +723,8 @@ export class MediaResource {
    *
    * `POST /api/v2/external/media`
    */
-  upload(body: MediaUploadForm, query: MediaUploadQuery, options: RequestOptions = {}): Promise<MediaUploadOut> {
+  upload(body: MediaUploadForm, params: MediaUploadQuery & RequestOptions): Promise<MediaUploadOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<MediaUploadOut>({ method: "POST", path: `/media`, query, body, multipart: true, options });
   }
 }
@@ -715,7 +744,8 @@ export class MessagesResource {
    *
    * `POST /api/v2/external/messages/mark-read`
    */
-  markRead(body: MarkReadIn, options: RequestOptions = {}): Promise<SuccessOut> {
+  markRead(body: MarkReadIn, params: RequestOptions = {}): Promise<SuccessOut> {
+    const options = params;
     return this.transport.request<SuccessOut>({ method: "POST", path: `/messages/mark-read`, body, options });
   }
 
@@ -729,7 +759,8 @@ export class MessagesResource {
    *
    * `POST /api/v2/external/messages/reaction`
    */
-  react(body: ReactionIn, options: RequestOptions = {}): Promise<ReactionOut> {
+  react(body: ReactionIn, params: RequestOptions = {}): Promise<ReactionOut> {
+    const options = params;
     return this.transport.request<ReactionOut>({ method: "POST", path: `/messages/reaction`, body, options });
   }
 
@@ -758,7 +789,8 @@ export class MessagesResource {
    *
    * `POST /api/v2/external/messages/send`
    */
-  send(body: SendMessageIn, options: RequestOptions = {}): Promise<SendMessageOut> {
+  send(body: SendMessageIn, params: RequestOptions = {}): Promise<SendMessageOut> {
+    const options = params;
     return this.transport.request<SendMessageOut>({ method: "POST", path: `/messages/send`, body, options });
   }
 }
@@ -780,7 +812,8 @@ export class PhoneNumbersResource {
    *
    * `POST /api/v2/external/phone-numbers`
    */
-  create(body: RegisterPhoneNumberIn, options: RequestOptions = {}): Promise<RegisterPhoneNumberOut> {
+  create(body: RegisterPhoneNumberIn, params: RequestOptions = {}): Promise<RegisterPhoneNumberOut> {
+    const options = params;
     return this.transport.request<RegisterPhoneNumberOut>({ method: "POST", path: `/phone-numbers`, body, options });
   }
 
@@ -796,7 +829,8 @@ export class PhoneNumbersResource {
    *
    * @param phoneNumberId id номера: поле phone_number_id из GET /api/v2/external/phone-numbers, например 123456789012345
    */
-  delete(phoneNumberId: string, options: RequestOptions = {}): Promise<null> {
+  delete(phoneNumberId: string, params: RequestOptions = {}): Promise<null> {
+    const options = params;
     return this.transport.request<null>({ method: "DELETE", path: `/phone-numbers/${encodeURIComponent(phoneNumberId)}`, options });
   }
 
@@ -812,7 +846,8 @@ export class PhoneNumbersResource {
    *
    * @param phoneNumberId id номера: поле phone_number_id из GET /api/v2/external/phone-numbers, например 123456789012345
    */
-  get(phoneNumberId: string, options: RequestOptions = {}): Promise<PhoneNumberOut> {
+  get(phoneNumberId: string, params: RequestOptions = {}): Promise<PhoneNumberOut> {
+    const options = params;
     return this.transport.request<PhoneNumberOut>({ method: "GET", path: `/phone-numbers/${encodeURIComponent(phoneNumberId)}`, options });
   }
 
@@ -828,23 +863,26 @@ export class PhoneNumbersResource {
    *
    * @param phoneNumberId id номера: поле phone_number_id из GET /api/v2/external/phone-numbers, например 123456789012345
    */
-  getBusinessProfile(phoneNumberId: string, options: RequestOptions = {}): Promise<BusinessProfileOut> {
+  getBusinessProfile(phoneNumberId: string, params: RequestOptions = {}): Promise<BusinessProfileOut> {
+    const options = params;
     return this.transport.request<BusinessProfileOut>({ method: "GET", path: `/phone-numbers/${encodeURIComponent(phoneNumberId)}/business-profile`, options });
   }
 
   /**
    * Список номеров
    *
-   * Возвращает номера WhatsApp, подключённые к аккаунту ключа.
+   * Возвращает номера WhatsApp и другие каналы, подключённые к аккаунту ключа.
    *
    * С этого метода начинают: phone_number_id из ответа нужен для отправки сообщений,
-   * загрузки файлов и шаблонов. Номер подключают в кабинете Wazzapo
+   * загрузки файлов и шаблонов. Номера WhatsApp идут первыми, за ними остальные каналы
+   * (поле channel); только WhatsApp: ?channel=whatsapp. Номер подключают в кабинете Wazzapo
    * или методом POST /phone-numbers. Отключённые номера в списке не показываются.
    *
    * `GET /api/v2/external/phone-numbers`
    */
-  list(options: RequestOptions = {}): Promise<PhoneNumberListOut> {
-    return this.transport.request<PhoneNumberListOut>({ method: "GET", path: `/phone-numbers`, options });
+  list(params: PhoneNumbersListQuery & RequestOptions = {}): Promise<PhoneNumberListOut> {
+    const [query, options] = splitOptions(params);
+    return this.transport.request<PhoneNumberListOut>({ method: "GET", path: `/phone-numbers`, query, options });
   }
 
   /**
@@ -860,7 +898,8 @@ export class PhoneNumbersResource {
    *
    * @param phoneNumberId id номера: поле phone_number_id из GET /api/v2/external/phone-numbers, например 123456789012345
    */
-  updateBusinessProfile(phoneNumberId: string, body: BusinessProfileIn, options: RequestOptions = {}): Promise<BusinessProfileUpdateOut> {
+  updateBusinessProfile(phoneNumberId: string, body: BusinessProfileIn, params: RequestOptions = {}): Promise<BusinessProfileUpdateOut> {
+    const options = params;
     return this.transport.request<BusinessProfileUpdateOut>({ method: "PATCH", path: `/phone-numbers/${encodeURIComponent(phoneNumberId)}/business-profile`, body, options });
   }
 }
@@ -882,7 +921,8 @@ export class PipelinesResource {
    *
    * `GET /api/v2/external/pipelines`
    */
-  list(query: PipelinesListQuery = {}, options: RequestOptions = {}): Promise<PipelineListOut> {
+  list(params: PipelinesListQuery & RequestOptions = {}): Promise<PipelineListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<PipelineListOut>({ method: "GET", path: `/pipelines`, query, options });
   }
 
@@ -891,9 +931,9 @@ export class PipelinesResource {
    *
    * `for await (const item of client.pipelines.listAll(...))`
    */
-  listAll(query: Omit<PipelinesListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<PipelineOut> {
+  listAll(params: Omit<PipelinesListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<PipelineOut> {
     return paginate<PipelineOut>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 }
@@ -917,7 +957,8 @@ export class TasksResource {
    *
    * @param dealId id сделки: поле id из GET /deals или из ответа POST /deals, например 6713b1d5f2c3d4e5f6071829
    */
-  create(dealId: string, body: TaskCreateIn, options: RequestOptions = {}): Promise<TaskOut> {
+  create(dealId: string, body: TaskCreateIn, params: RequestOptions = {}): Promise<TaskOut> {
+    const options = params;
     return this.transport.request<TaskOut>({ method: "POST", path: `/deals/${encodeURIComponent(dealId)}/tasks`, body, options });
   }
 
@@ -933,7 +974,8 @@ export class TasksResource {
    *
    * @param dealId id сделки: поле id из GET /deals или из ответа POST /deals, например 6713b1d5f2c3d4e5f6071829
    */
-  list(dealId: string, query: TasksListQuery = {}, options: RequestOptions = {}): Promise<TaskListOut> {
+  list(dealId: string, params: TasksListQuery & RequestOptions = {}): Promise<TaskListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<TaskListOut>({ method: "GET", path: `/deals/${encodeURIComponent(dealId)}/tasks`, query, options });
   }
 
@@ -942,9 +984,9 @@ export class TasksResource {
    *
    * `for await (const item of client.tasks.listAll(...))`
    */
-  listAll(dealId: string, query: Omit<TasksListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<TaskOut> {
+  listAll(dealId: string, params: Omit<TasksListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<TaskOut> {
     return paginate<TaskOut>((cursor) =>
-      this.list(dealId, { ...query, cursor }, options),
+      this.list(dealId, { ...params, cursor }),
     );
   }
 
@@ -961,7 +1003,8 @@ export class TasksResource {
    *
    * @param taskId id задачи: поле id из GET /deals/{deal_id}/tasks или из ответа POST /deals/{deal_id}/tasks
    */
-  update(taskId: string, body: TaskUpdateIn, options: RequestOptions = {}): Promise<TaskOut> {
+  update(taskId: string, body: TaskUpdateIn, params: RequestOptions = {}): Promise<TaskOut> {
+    const options = params;
     return this.transport.request<TaskOut>({ method: "PATCH", path: `/tasks/${encodeURIComponent(taskId)}`, body, options });
   }
 }
@@ -979,7 +1022,8 @@ export class TeamResource {
    *
    * `GET /api/v2/external/team`
    */
-  list(query: TeamListQuery = {}, options: RequestOptions = {}): Promise<TeamListOut> {
+  list(params: TeamListQuery & RequestOptions = {}): Promise<TeamListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<TeamListOut>({ method: "GET", path: `/team`, query, options });
   }
 
@@ -988,9 +1032,9 @@ export class TeamResource {
    *
    * `for await (const item of client.team.listAll(...))`
    */
-  listAll(query: Omit<TeamListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<TeamMemberOut> {
+  listAll(params: Omit<TeamListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<TeamMemberOut> {
     return paginate<TeamMemberOut>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 }
@@ -1014,7 +1058,8 @@ export class TemplatesResource {
    *
    * `POST /api/v2/external/templates`
    */
-  create(body: CreateTemplateIn, options: RequestOptions = {}): Promise<TemplateOut> {
+  create(body: CreateTemplateIn, params: RequestOptions = {}): Promise<TemplateOut> {
+    const options = params;
     return this.transport.request<TemplateOut>({ method: "POST", path: `/templates`, body, options });
   }
 
@@ -1030,7 +1075,8 @@ export class TemplatesResource {
    *
    * @param templateId id шаблона в Meta: template_id из POST или GET /api/v2/external/templates, например 1252715608684590
    */
-  delete(templateId: string, options: RequestOptions = {}): Promise<null> {
+  delete(templateId: string, params: RequestOptions = {}): Promise<null> {
+    const options = params;
     return this.transport.request<null>({ method: "DELETE", path: `/templates/${encodeURIComponent(templateId)}`, options });
   }
 
@@ -1049,7 +1095,8 @@ export class TemplatesResource {
    *
    * @param templateId id шаблона в Meta: template_id из POST или GET /api/v2/external/templates, например 1252715608684590
    */
-  get(templateId: string, options: RequestOptions = {}): Promise<TemplateOut> {
+  get(templateId: string, params: RequestOptions = {}): Promise<TemplateOut> {
+    const options = params;
     return this.transport.request<TemplateOut>({ method: "GET", path: `/templates/${encodeURIComponent(templateId)}`, options });
   }
 
@@ -1069,7 +1116,8 @@ export class TemplatesResource {
    *
    * @param templateId id шаблона в Meta: template_id из POST или GET /api/v2/external/templates, например 1252715608684590
    */
-  getStatus(templateId: string, options: RequestOptions = {}): Promise<TemplateOut> {
+  getStatus(templateId: string, params: RequestOptions = {}): Promise<TemplateOut> {
+    const options = params;
     return this.transport.request<TemplateOut>({ method: "GET", path: `/templates/${encodeURIComponent(templateId)}/status`, options });
   }
 
@@ -1080,11 +1128,13 @@ export class TemplatesResource {
    *
    * Нужен, чтобы выбрать шаблон для messages.send: передайте его name и language, а значений переменных
    * столько, сколько variables_count. Фильтры status, category, name, language можно сочетать.
-   * Страницы курсором: next_cursor передайте в cursor. Ошибки: 404 номер не найден, 403 account_restricted.
+   * Страницы курсором: next_cursor передайте в cursor. У каналов без шаблонов Meta (почта, OLX, Telegram)
+   * список пустой. Ошибки: 404 номер не найден, 403 account_restricted.
    *
    * `GET /api/v2/external/templates`
    */
-  list(query: TemplatesListQuery, options: RequestOptions = {}): Promise<TemplateListOut> {
+  list(params: TemplatesListQuery & RequestOptions): Promise<TemplateListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<TemplateListOut>({ method: "GET", path: `/templates`, query, options });
   }
 
@@ -1093,9 +1143,9 @@ export class TemplatesResource {
    *
    * `for await (const item of client.templates.listAll(...))`
    */
-  listAll(query: Omit<TemplatesListQuery, "cursor">, options: RequestOptions = {}): AsyncIterable<TemplateOut> {
+  listAll(params: Omit<TemplatesListQuery, "cursor"> & RequestOptions): AsyncIterable<TemplateOut> {
     return paginate<TemplateOut>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 
@@ -1114,7 +1164,8 @@ export class TemplatesResource {
    *
    * @param templateId id шаблона в Meta: template_id из POST или GET /api/v2/external/templates, например 1252715608684590
    */
-  update(templateId: string, body: UpdateTemplateIn, options: RequestOptions = {}): Promise<TemplateOut> {
+  update(templateId: string, body: UpdateTemplateIn, params: RequestOptions = {}): Promise<TemplateOut> {
+    const options = params;
     return this.transport.request<TemplateOut>({ method: "PATCH", path: `/templates/${encodeURIComponent(templateId)}`, body, options });
   }
 }
@@ -1135,7 +1186,8 @@ export class WebhookEventTypesResource {
    *
    * `GET /api/v2/external/webhook-event-types`
    */
-  list(query: WebhookEventTypesListQuery = {}, options: RequestOptions = {}): Promise<WebhookEventTypeListOut> {
+  list(params: WebhookEventTypesListQuery & RequestOptions = {}): Promise<WebhookEventTypeListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<WebhookEventTypeListOut>({ method: "GET", path: `/webhook-event-types`, query, options });
   }
 
@@ -1144,9 +1196,9 @@ export class WebhookEventTypesResource {
    *
    * `for await (const item of client.webhookEventTypes.listAll(...))`
    */
-  listAll(query: Omit<WebhookEventTypesListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<WebhookEventTypeOut> {
+  listAll(params: Omit<WebhookEventTypesListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<WebhookEventTypeOut> {
     return paginate<WebhookEventTypeOut>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 }
@@ -1233,7 +1285,8 @@ export class WebhooksResource {
    *
    * `POST /api/v2/external/webhooks`
    */
-  create(body: WebhookCreateIn, options: RequestOptions = {}): Promise<WebhookWithSecretOut> {
+  create(body: WebhookCreateIn, params: RequestOptions = {}): Promise<WebhookWithSecretOut> {
+    const options = params;
     return this.transport.request<WebhookWithSecretOut>({ method: "POST", path: `/webhooks`, body, options });
   }
 
@@ -1249,7 +1302,8 @@ export class WebhooksResource {
    *
    * @param webhookId id вебхука: поле id из ответа POST /webhooks или из GET /webhooks, например 6712f0c4a1b2c3d4e5f60719
    */
-  delete(webhookId: string, options: RequestOptions = {}): Promise<null> {
+  delete(webhookId: string, params: RequestOptions = {}): Promise<null> {
+    const options = params;
     return this.transport.request<null>({ method: "DELETE", path: `/webhooks/${encodeURIComponent(webhookId)}`, options });
   }
 
@@ -1264,7 +1318,8 @@ export class WebhooksResource {
    *
    * @param webhookId id вебхука: поле id из ответа POST /webhooks или из GET /webhooks, например 6712f0c4a1b2c3d4e5f60719
    */
-  get(webhookId: string, options: RequestOptions = {}): Promise<WebhookOut> {
+  get(webhookId: string, params: RequestOptions = {}): Promise<WebhookOut> {
+    const options = params;
     return this.transport.request<WebhookOut>({ method: "GET", path: `/webhooks/${encodeURIComponent(webhookId)}`, options });
   }
 
@@ -1278,7 +1333,8 @@ export class WebhooksResource {
    *
    * `GET /api/v2/external/webhooks`
    */
-  list(query: WebhooksListQuery = {}, options: RequestOptions = {}): Promise<WebhookListOut> {
+  list(params: WebhooksListQuery & RequestOptions = {}): Promise<WebhookListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<WebhookListOut>({ method: "GET", path: `/webhooks`, query, options });
   }
 
@@ -1287,9 +1343,9 @@ export class WebhooksResource {
    *
    * `for await (const item of client.webhooks.listAll(...))`
    */
-  listAll(query: Omit<WebhooksListQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<WebhookOut> {
+  listAll(params: Omit<WebhooksListQuery, "cursor"> & RequestOptions = {}): AsyncIterable<WebhookOut> {
     return paginate<WebhookOut>((cursor) =>
-      this.list({ ...query, cursor }, options),
+      this.list({ ...params, cursor }),
     );
   }
 
@@ -1306,7 +1362,8 @@ export class WebhooksResource {
    *
    * @param webhookId id вебхука: поле id из ответа POST /webhooks или из GET /webhooks, например 6712f0c4a1b2c3d4e5f60719
    */
-  listDeliveries(webhookId: string, query: WebhooksListDeliveriesQuery = {}, options: RequestOptions = {}): Promise<WebhookDeliveryListOut> {
+  listDeliveries(webhookId: string, params: WebhooksListDeliveriesQuery & RequestOptions = {}): Promise<WebhookDeliveryListOut> {
+    const [query, options] = splitOptions(params);
     return this.transport.request<WebhookDeliveryListOut>({ method: "GET", path: `/webhooks/${encodeURIComponent(webhookId)}/deliveries`, query, options });
   }
 
@@ -1315,9 +1372,9 @@ export class WebhooksResource {
    *
    * `for await (const item of client.webhooks.listDeliveriesAll(...))`
    */
-  listDeliveriesAll(webhookId: string, query: Omit<WebhooksListDeliveriesQuery, "cursor"> = {}, options: RequestOptions = {}): AsyncIterable<WebhookDeliveryOut> {
+  listDeliveriesAll(webhookId: string, params: Omit<WebhooksListDeliveriesQuery, "cursor"> & RequestOptions = {}): AsyncIterable<WebhookDeliveryOut> {
     return paginate<WebhookDeliveryOut>((cursor) =>
-      this.listDeliveries(webhookId, { ...query, cursor }, options),
+      this.listDeliveries(webhookId, { ...params, cursor }),
     );
   }
 
@@ -1335,7 +1392,8 @@ export class WebhooksResource {
    * @param webhookId id вебхука: поле id из ответа POST /webhooks или из GET /webhooks, например 6712f0c4a1b2c3d4e5f60719
    * @param deliveryId id доставки: поле id из GET /webhooks/{webhook_id}/deliveries или заголовок X-Wazzapo-Delivery-Id запроса, пришедшего на ваш адрес
    */
-  retryDelivery(webhookId: string, deliveryId: string, options: RequestOptions = {}): Promise<WebhookRetryOut> {
+  retryDelivery(webhookId: string, deliveryId: string, params: RequestOptions = {}): Promise<WebhookRetryOut> {
+    const options = params;
     return this.transport.request<WebhookRetryOut>({ method: "POST", path: `/webhooks/${encodeURIComponent(webhookId)}/deliveries/${encodeURIComponent(deliveryId)}/retry`, options });
   }
 
@@ -1351,7 +1409,8 @@ export class WebhooksResource {
    *
    * @param webhookId id вебхука: поле id из ответа POST /webhooks или из GET /webhooks, например 6712f0c4a1b2c3d4e5f60719
    */
-  rotateSecret(webhookId: string, options: RequestOptions = {}): Promise<WebhookSecretOut> {
+  rotateSecret(webhookId: string, params: RequestOptions = {}): Promise<WebhookSecretOut> {
+    const options = params;
     return this.transport.request<WebhookSecretOut>({ method: "POST", path: `/webhooks/${encodeURIComponent(webhookId)}/rotate-secret`, options });
   }
 
@@ -1367,7 +1426,8 @@ export class WebhooksResource {
    *
    * @param webhookId id вебхука: поле id из ответа POST /webhooks или из GET /webhooks, например 6712f0c4a1b2c3d4e5f60719
    */
-  test(webhookId: string, options: RequestOptions = {}): Promise<WebhookTestOut> {
+  test(webhookId: string, params: RequestOptions = {}): Promise<WebhookTestOut> {
+    const options = params;
     return this.transport.request<WebhookTestOut>({ method: "POST", path: `/webhooks/${encodeURIComponent(webhookId)}/test`, options });
   }
 
@@ -1384,7 +1444,8 @@ export class WebhooksResource {
    *
    * @param webhookId id вебхука: поле id из ответа POST /webhooks или из GET /webhooks, например 6712f0c4a1b2c3d4e5f60719
    */
-  update(webhookId: string, body: WebhookUpdateIn, options: RequestOptions = {}): Promise<WebhookOut> {
+  update(webhookId: string, body: WebhookUpdateIn, params: RequestOptions = {}): Promise<WebhookOut> {
+    const options = params;
     return this.transport.request<WebhookOut>({ method: "PATCH", path: `/webhooks/${encodeURIComponent(webhookId)}`, body, options });
   }
 }

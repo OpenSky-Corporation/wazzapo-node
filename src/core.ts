@@ -37,3 +37,18 @@ export interface RequestSpec {
 export interface Transport {
   request<T>(spec: RequestSpec): Promise<T>;
 }
+
+const OPTION_KEYS = ["idempotencyKey", "timeout", "maxRetries", "signal", "headers"] as const;
+
+/**
+ * Последний аргумент метода: фильтры запроса и настройки вызова в одном объекте. Так новый
+ * необязательный фильтр в API не сдвигает аргументы и не ломает уже написанный код.
+ */
+export function splitOptions<Q extends object>(params: Q & RequestOptions): [Q, RequestOptions] {
+  const query: Record<string, unknown> = {};
+  const options: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(params)) {
+    ((OPTION_KEYS as readonly string[]).includes(key) ? options : query)[key] = value;
+  }
+  return [query as Q, options as RequestOptions];
+}

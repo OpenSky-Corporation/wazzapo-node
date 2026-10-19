@@ -3,8 +3,11 @@
  *
  * Подпись: `X-Wazzapo-Signature-V2: v2=<hex HMAC-SHA256(secret, "{X-Wazzapo-Timestamp}.{сырое тело}")>`.
  * Проверяйте сырое тело запроса, до JSON.parse: другие пробелы или порядок ключей меняют подпись.
+ * Работает в Node.js (node:crypto); в браузере вебхуки не принимают, клиент API там работает.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
+
+import { WazzapoError } from "./errors.js";
 
 import type { WebhookEvent } from "./generated/webhooks.js";
 
@@ -17,12 +20,28 @@ export const DELIVERY_ID_HEADER = "X-Wazzapo-Delivery-Id";
 /** Допуск по времени по умолчанию: 5 минут. */
 export const DEFAULT_TOLERANCE_S = 300;
 
-/** Подпись не сошлась, нет заголовков или метка времени старая. */
-export class WebhookVerificationError extends Error {
+/** Подпись не сошлась, нет заголовков, метка времени старая, нет секрета или тело не JSON. Отвечайте 400. */
+export class WebhookVerificationError extends WazzapoError {
   constructor(message: string) {
-    super(message);
-    this.name = "WebhookVerificationError";
+    super({ status: 0, code: "WEBHOOK_VERIFICATION_FAILED", message });
   }
+}
+
+function requireSecret(secret: unknown): string {
+  if (typeof secret !== "string" || secret.trim() === "") {
+    // пустой секрет: подпись пустым ключом сошлась бы у любого, кто его угадает
+    throw new WebhookVerificationError("Нет секрета вебхука: передайте секрет из ответа POST /webhooks");
+  }
+  return secret;
+}
+
+function sameSignature(given: string, expected: string): boolean {
+  const want = Buffer.from(expected);
+  // несколько подписей через запятую (на время смены секрета): хватает совпадения одной
+  return given
+    .split(",")
+    .map((part) => Buffer.from(part.trim()))
+    .some((part) => part.length === want.length && timingSafeEqual(part, want));
 }
 
 export type HeaderSource =
@@ -65,6 +84,7 @@ export const Webhooks = {
    * @param secret секрет вебхука из ответа POST /webhooks
    */
   verify(body: string | Uint8Array, headers: HeaderSource, secret: string, options: VerifyOptions = {}): WebhookEvent {
+    const key = requireSecret(secret);
     const timestamp = header(headers, TIMESTAMP_HEADER);
     const signature = header(headers, SIGNATURE_HEADER);
     if (!timestamp || !signature) {
@@ -77,17 +97,19 @@ export const Webhooks = {
     if (Math.abs(now - sent) > tolerance) {
       throw new WebhookVerificationError(`Метка времени старше ${tolerance} с: возможен повтор чужого запроса`);
     }
-    const expected = Buffer.from(`v2=${hmac(secret, timestamp, body)}`);
-    const given = Buffer.from(signature.trim());
-    if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+    if (!sameSignature(signature, `v2=${hmac(key, timestamp, body)}`)) {
       throw new WebhookVerificationError("Подпись не совпала: проверьте секрет и что тело не менялось");
     }
-    return JSON.parse(text(body)) as WebhookEvent;
+    try {
+      return JSON.parse(text(body)) as WebhookEvent;
+    } catch {
+      throw new WebhookVerificationError("Тело вебхука не JSON");
+    }
   },
 
   /** Заголовки подписи для тела: для тестов своего приёмника. */
   sign(body: string | Uint8Array, secret: string, timestamp: number = Math.floor(Date.now() / 1000)): Record<string, string> {
     const ts = String(timestamp);
-    return { [TIMESTAMP_HEADER]: ts, [SIGNATURE_HEADER]: `v2=${hmac(secret, ts, body)}` };
+    return { [TIMESTAMP_HEADER]: ts, [SIGNATURE_HEADER]: `v2=${hmac(requireSecret(secret), ts, body)}` };
   },
 };

@@ -87,8 +87,14 @@ function formData(body: unknown): FormData {
   return form;
 }
 
-async function readBody(response: Response): Promise<unknown> {
-  const text = await response.text();
+interface Reply {
+  response: Response;
+  bytes: ArrayBuffer;
+}
+
+/** Тело ответа: JSON, иначе текст (страница прокси), пустое: null. */
+function decode(bytes: ArrayBuffer): unknown {
+  const text = new TextDecoder().decode(bytes);
   if (!text) return null;
   try {
     return JSON.parse(text) as unknown;
@@ -181,29 +187,33 @@ export class Wazzapo implements Transport {
       }
     }
     const retries = options.maxRetries ?? this.maxRetries;
+    const signal = options.signal;
     for (let attempt = 0; ; attempt++) {
+      // уже отменённый сигнал: запрос не отправляем совсем
+      signal?.throwIfAborted();
       const started = Date.now();
-      let response: Response;
+      let reply: Reply;
       try {
-        response = await this.#send(url, { method, headers, body }, options.timeout ?? this.timeout, options.signal);
+        reply = await this.#send(url, { method, headers, body }, options.timeout ?? this.timeout, signal);
       } catch (error) {
-        if (options.signal?.aborted || !(error instanceof ConnectionError) || attempt >= retries) throw error;
+        if (signal?.aborted || !(error instanceof ConnectionError) || attempt >= retries) throw error;
         this.#log(`${method} ${spec.path} сбой сети, повтор ${attempt + 1}`);
-        await this.#sleep(this.#delay(attempt, null));
+        await this.#wait(this.#delay(attempt, null), signal);
         continue;
       }
+      const { response, bytes } = reply;
       this.#log(`${method} ${spec.path} ${response.status} ${Date.now() - started} мс key=${this.maskedApiKey}`);
-      if (response.ok) return this.#parse<T>(response, spec);
+      if (response.ok) return this.#parse<T>(response, bytes, spec);
       if (RETRY_STATUSES.has(response.status) && attempt < retries) {
-        await response.body?.cancel().catch(() => undefined);
-        await this.#sleep(this.#delay(attempt, response.headers.get("retry-after")));
+        await this.#wait(this.#delay(attempt, response.headers.get("retry-after")), signal);
         continue;
       }
-      throw errorFromResponse(response.status, response.headers, await readBody(response));
+      throw errorFromResponse(response.status, response.headers, decode(bytes));
     }
   }
 
-  async #send(url: string, init: RequestInit, timeout: number, signal?: AbortSignal): Promise<Response> {
+  /** Запрос и чтение тела целиком: таймаут действует до конца тела, не только до заголовков. */
+  async #send(url: string, init: RequestInit, timeout: number, signal?: AbortSignal): Promise<Reply> {
     const controller = new AbortController();
     let timedOut = false;
     const timer = setTimeout(() => {
@@ -212,10 +222,13 @@ export class Wazzapo implements Transport {
     }, timeout);
     const onAbort = (): void => controller.abort();
     signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) controller.abort();
     try {
-      return await this.#fetch(url, { ...init, signal: controller.signal });
+      const response = await this.#fetch(url, { ...init, signal: controller.signal });
+      const bytes = await response.arrayBuffer();
+      return { response, bytes };
     } catch (cause) {
-      if (signal?.aborted) throw cause;
+      if (signal?.aborted) throw signal.reason ?? cause;
       if (timedOut) {
         throw new TimeoutError({ status: 0, code: "TIMEOUT", message: `Нет ответа за ${timeout} мс`, cause });
       }
@@ -227,10 +240,30 @@ export class Wazzapo implements Transport {
     }
   }
 
-  async #parse<T>(response: Response, spec: RequestSpec): Promise<T> {
-    if (spec.binary) return (await response.arrayBuffer()) as T;
+  /** Пауза между повторами; отмена сигнала прерывает её сразу. */
+  #wait(ms: number, signal?: AbortSignal): Promise<void> {
+    if (!signal) return this.#sleep(ms);
+    signal.throwIfAborted();
+    return new Promise<void>((resolve, reject) => {
+      const onAbort = (): void => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+      this.#sleep(ms).then(
+        () => {
+          signal.removeEventListener("abort", onAbort);
+          resolve();
+        },
+        (error: unknown) => {
+          signal.removeEventListener("abort", onAbort);
+          reject(error);
+        },
+      );
+    });
+  }
+
+  #parse<T>(response: Response, bytes: ArrayBuffer, spec: RequestSpec): T {
+    if (spec.binary) return bytes as T;
     if (response.status === 204) return null as T;
-    return (await readBody(response)) as T;
+    return decode(bytes) as T;
   }
 
   /** Задержка повтора: Retry-After (не больше 60 с) или min(0.5 × 2^n, 8) с ± 25 %. */

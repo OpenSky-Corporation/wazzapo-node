@@ -54,8 +54,26 @@ export class AuthenticationError extends WazzapoError {}
 export class PaymentRequiredError extends WazzapoError {}
 /** 403: у ключа нет права, IP не разрешён или исчерпан лимит тарифа. */
 export class PermissionDeniedError extends WazzapoError {}
+/** details у USAGE_LIMIT_EXCEEDED: что за лимит, сколько потрачено и где перейти на тариф выше. */
+export type UsageLimitDetails = {
+  /** Какой лимит исчерпан, например messages. */
+  param?: string | null;
+  /** Сколько уже потрачено за месяц. */
+  current?: number | null;
+  /** Лимит тарифа. */
+  limit?: number | null;
+  /** Текущий тариф. */
+  plan_id?: string | null;
+  /** Тариф, на котором лимит больше. */
+  upgrade_plan?: string | null;
+  /** Страница выбора тарифа, например /pricing. */
+  upgrade_url?: string | null;
+};
+
 /** 403 USAGE_LIMIT_EXCEEDED: исчерпан лимит тарифа; в details current, limit, upgrade_url. */
-export class UsageLimitError extends PermissionDeniedError {}
+export class UsageLimitError extends PermissionDeniedError {
+  declare readonly details: UsageLimitDetails | null;
+}
 /** 404: объекта нет в этом аккаунте. */
 export class NotFoundError extends WazzapoError {}
 /** 409: объект уже есть или запрос с этим Idempotency-Key ещё выполняется. */
