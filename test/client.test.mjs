@@ -20,7 +20,7 @@ import {
 import { KEY, json, mockFetch, noSleep } from "./helpers.mjs";
 
 const client = (fetch, extra = {}) => new Wazzapo({ apiKey: KEY, fetch, sleep: noSleep, ...extra });
-const spec = JSON.parse(readFileSync(new URL("../../openapi.json", import.meta.url), "utf8"));
+const spec = JSON.parse(readFileSync(new URL("./openapi.json", import.meta.url), "utf8"));
 
 test("запрос: адрес, ключ, User-Agent, тело и параметры", async () => {
   const { fetch, calls } = mockFetch([json(200, { message_id: "m1", provider_message_id: "wamid.X", status: "sent" })]);
