@@ -222,6 +222,16 @@ createServer(async (req, res) => {
 отсеивайте дубли. Проверить приёмник: `client.webhooks.test(webhookId)`,
 для своих тестов подпись можно создать: `Webhooks.sign(body, secret)`.
 
+## Примеры
+
+Готовые примеры без фреймворков в папке [examples](https://github.com/OpenSky-Corporation/wazzapo-node/tree/main/examples):
+
+- [bot-buttons.mjs](https://github.com/OpenSky-Corporation/wazzapo-node/tree/main/examples/bot-buttons.mjs): бот с кнопками отвечает на входящее сообщение и на нажатие кнопки;
+- [lead-to-deal.mjs](https://github.com/OpenSky-Corporation/wazzapo-node/tree/main/examples/lead-to-deal.mjs): заявка с формы сайта становится сделкой без дублей, клиент получает приветственный шаблон;
+- [webhooks-receiver.mjs](https://github.com/OpenSky-Corporation/wazzapo-node/tree/main/examples/webhooks-receiver.mjs): приёмник всех событий с проверкой подписи.
+
+Там же описано, как проверить их на тестовом ключе и подписанным тестовым событием.
+
 ## Тестовый ключ
 
 Ключ `wz_test_…` читает настоящие данные, а отправка, создание и изменение ничего не делают и отвечают как

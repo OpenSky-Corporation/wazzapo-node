@@ -1,0 +1,10 @@
+{
+  "name": "wazzapo-sdk-examples",
+  "private": true,
+  "type": "module",
+  "description": "Примеры @wazzapo/sdk: бот с кнопками, заявка в сделку, приём вебхуков",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@wazzapo/sdk": "file:.."
+  }
+}
